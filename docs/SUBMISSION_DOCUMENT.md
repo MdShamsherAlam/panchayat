@@ -220,7 +220,13 @@ npm run start-all
 # → Open http://localhost:5173
 ```
 
-**Default Admin**: `admin@panchayat.gov.in` / `admin1010#`
+**Default Admin**: `admin@panchayat.gov.in` / `123456`
+
+**SQL reference for Admin Insert:**
+```sql
+INSERT INTO `users` (`id`, `name`, `email`, `password`, `wardNo`, `roleId`, `createdAt`, `updatedAt`) 
+VALUES (NULL, 'admin', 'admin@panchayat.gov.in', '$2a$10$.x99mhQTZL.bRruCPBeau.Ko0u6iSRySzOj4ePZkBihWJv33aGs7S', NULL, '1', '2026-02-22 15:36:41', '2026-02-22 16:59:07');
+```
 
 ---
 
@@ -240,6 +246,12 @@ npm run start-all
 | 3:10–3:30 | Escalate | Mark complaint as escalated, see red pulse dot |
 | 3:30–3:50 | Admin Login | Login as admin@panchayat.gov.in |
 | 3:50–4:00 | Admin Dashboard | Show KPI cards, resolution rate, system health |
+
+---
+
+## 9. PROMPT BLUEPRINT (FOR HACKATHON)
+A detailed breakdown of all prompts and the agentic development workflow can be found in:
+[PROMPT_BLUEPRINT.md](file:///c:/shamsher/panchayat/docs/PROMPT_BLUEPRINT.md)
 
 ---
 

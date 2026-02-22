@@ -163,7 +163,7 @@ cd frontend && npm install && cd ..
 #   DB_HOST=localhost
 #   DB_PORT=3306
 #   JWT_SECRET=your_secret_key
-#   DEFAULT_ADMIN_PASSWORD=admin1010#
+#   DEFAULT_ADMIN_PASSWORD=123456
 
 # 6. Create the MySQL database (tables auto-created by Sequelize)
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS panchayat;"

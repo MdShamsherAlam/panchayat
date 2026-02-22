@@ -25,7 +25,7 @@ const seed = async () => {
         // ── Default Admin ──────────────────────────────────────────────────────
         const adminRole = await Role.findOne({ where: { slug: 'admin' } });
         const adminEmail = 'admin@panchayat.gov.in';
-        const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin1010#';
+        const DEFAULT_PASS = process.env.DEFAULT_ADMIN_PASSWORD || '123456';
 
         const [, created] = await User.findOrCreate({
             where: { email: adminEmail },

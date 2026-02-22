@@ -66,7 +66,7 @@ const connectDB = async () => {
     const bcrypt = require('bcryptjs');
     const adminRole = await Role.findOne({ where: { slug: 'admin' } });
     const adminEmail = 'admin@panchayat.gov.in';
-    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || 'admin1010#';
+    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || '123456';
     const hashedPass = await bcrypt.hash(adminPass, 10);
 
     const [adminUser, created] = await User.findOrCreate({
