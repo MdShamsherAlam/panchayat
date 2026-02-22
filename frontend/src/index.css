@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Mukta', 'Inter', sans-serif;
+        background-color: #f9f3e8;
+        color: #2d2011;
+    }
+}
+
+@layer components {
+    .btn-primary {
+        @apply bg-green-700 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-800 transition-all duration-200 shadow-md;
+    }
+
+    .btn-secondary {
+        @apply bg-amber-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-amber-700 transition-all duration-200;
+    }
+
+    .card {
+        @apply bg-white rounded-xl shadow-md border border-amber-100 p-6;
+    }
+
+    .input-field {
+        @apply block w-full px-4 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-amber-50 text-gray-800 placeholder-gray-400;
+    }
+
+    .badge-open {
+        @apply bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full;
+    }
+
+    .badge-progress {
+        @apply bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full;
+    }
+
+    .badge-resolved {
+        @apply bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full;
+    }
+
+    .badge-closed {
+        @apply bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full;
+    }
+
+    .badge-escalated {
+        @apply bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full;
+    }
+}

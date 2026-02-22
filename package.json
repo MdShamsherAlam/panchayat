@@ -1,0 +1,16 @@
+{
+    "name": "panchayat-cm",
+    "version": "1.0.0",
+    "description": "Digital Complaint Management System for Panchayat",
+    "main": "index.js",
+    "scripts": {
+        "backend": "cd backend && npm run start",
+        "frontend": "cd frontend && npm run dev",
+        "seed": "cd backend && node seed.js",
+        "dev": "concurrently --names \"BACKEND,FRONTEND\" -c \"bgBlue.bold,bgGreen.bold\" \"npm run backend\" \"npm run frontend\"",
+        "start-all": "concurrently --names \"SEED,BACKEND,FRONTEND\" -c \"bgYellow.bold,bgBlue.bold,bgGreen.bold\" --kill-others-on-fail \"npm run seed\" \"npm run backend\" \"npm run frontend\""
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}
