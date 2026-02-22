@@ -40,7 +40,4 @@ const User = sequelize.define('User', {
     timestamps: true,
 });
 
-User.belongsTo(Role, { foreignKey: 'roleId' });
-Role.hasMany(User, { foreignKey: 'roleId' });
-
 module.exports = User;

@@ -1,34 +1,33 @@
 require('dotenv').config();
 const { sequelize } = require('./config/db');
-const Role = require('./models/Role');
-const User = require('./models/User');
-const bcrypt = require('bcryptjs');
 
+// Load ALL models in FK dependency order before sync
+const { Role, User, Complaint, Attachment, History } = require('./models/index');
+const bcrypt = require('bcryptjs');
 
 const seed = async () => {
     try {
-        await sequelize.sync({ force: false }); // Don't drop existing data
+        // Sync all tables (create if not exist, no data loss)
+        await sequelize.sync({ alter: true });
+        console.log('[SEED] All tables synced.');
 
+        // ── Roles ──────────────────────────────────────────────────────────────
         const roles = [
             { name: 'Administrator', slug: 'admin' },
             { name: 'Panchayat Official', slug: 'official' },
             { name: 'Citizen', slug: 'citizen' }
         ];
-
         for (const roleData of roles) {
-            await Role.findOrCreate({
-                where: { slug: roleData.slug },
-                defaults: roleData
-            });
+            await Role.findOrCreate({ where: { slug: roleData.slug }, defaults: roleData });
         }
+        console.log('[SEED] Roles seeded.');
 
-        console.log('Roles seeded.');
-
+        // ── Default Admin ──────────────────────────────────────────────────────
         const adminRole = await Role.findOne({ where: { slug: 'admin' } });
         const adminEmail = 'admin@panchayat.gov.in';
-        const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
+        const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin1010#';
 
-        const [adminUser, created] = await User.findOrCreate({
+        const [, created] = await User.findOrCreate({
             where: { email: adminEmail },
             defaults: {
                 name: process.env.DEFAULT_ADMIN_NAME || 'System Admin',
@@ -38,16 +37,11 @@ const seed = async () => {
             }
         });
 
-        if (created) {
-            console.log('Default admin created:', adminEmail);
-        } else {
-            console.log('Admin already exists.');
-        }
-
+        console.log(created ? `[SEED] Admin created: ${adminEmail}` : '[SEED] Admin already exists.');
         process.exit(0);
     } catch (error) {
-        console.error('Seeding failed (non-fatal):', error.message);
-        process.exit(0); // Non-fatal: continue even if seeding fails (e.g., already seeded)
+        console.error('[SEED] Seeding failed:', error.message);
+        process.exit(0); // non-fatal — DB may already be seeded
     }
 };
 

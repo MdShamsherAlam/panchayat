@@ -59,13 +59,21 @@ const Complaint = sequelize.define('Complaint', {
     escalatedAt: {
         type: DataTypes.DATE,
         allowNull: true,
-    }
+    },
+    // Field staff assignment
+    assignedStaff: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: 'Name/contact of field worker assigned to this complaint',
+    },
+    priority: {
+        type: DataTypes.ENUM('Low', 'Medium', 'High', 'Critical'),
+        defaultValue: 'Medium',
+    },
+
 }, {
     tableName: 'complaints',
     timestamps: true,
 });
-
-Complaint.belongsTo(User, { as: 'citizen', foreignKey: 'citizenId' });
-Complaint.belongsTo(User, { as: 'official', foreignKey: 'officialId' });
 
 module.exports = Complaint;

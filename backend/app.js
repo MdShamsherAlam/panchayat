@@ -9,15 +9,16 @@ const { connectDB } = require('./config/db');
 
 const app = express();
 
-// Middleware
+// ─── Middleware ────────────────────────────────────────────────────────────────
 app.use(helmet());
 app.use(cors());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(morgan('dev'));
+app.use('/uploads', express.static('uploads'));
 
-// Request Correlation (Observability)
+// Request Correlation
 app.use((req, res, next) => {
     const requestId = req.headers['x-request-id'] || `req-${Date.now()}`;
     req.requestId = requestId;
@@ -25,25 +26,28 @@ app.use((req, res, next) => {
     next();
 });
 
-// Database Connection
-connectDB();
+// ─── Health Check ─────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+    res.json({ message: 'Welcome to the Panchayat API', status: 'ok' });
+});
 
-// Routes
+// ─── Routes (mounted AFTER db sync in www.js) ─────────────────────────────────
 const v1Routes = require('./routes/v1');
 app.use('/api/v1', v1Routes);
 
-app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to the Panchayat API' });
-});
-
-// Error Handling Middleware
+// ─── Global Error Handler ──────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('[ERROR]', err.message);
     res.status(err.status || statusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: err.message || 'Internal Server Error',
         requestId: req.requestId
     });
 });
+
+// ─── DB Init + Export ──────────────────────────────────────────────────────────
+// connectDB is called from bin/www.js BEFORE server.listen()
+// so all tables are guaranteed to exist at boot.
+app.connectDB = connectDB;
 
 module.exports = app;

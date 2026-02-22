@@ -1,69 +1,67 @@
 #!/usr/bin/env node
+'use strict';
 require('dotenv').config();
 
 const http = require('http');
-const debug = require('debug')('panchayat:server');
 const app = require('../app');
-const initSocket = require('../socket');
 
 const PORT = normalizePort(process.env.PORT || '3000');
 app.set('port', PORT);
 
-const server = http.createServer(app);
-initSocket(server);
+// ─── Start ─────────────────────────────────────────────────────────────────────
+(async () => {
+    // 1. Connect DB + sync all tables FIRST, then start HTTP server
+    await app.connectDB();
 
-// Track sockets for graceful shutdown
-const sockets = new Set();
-server.on('connection', (socket) => {
-    sockets.add(socket);
-    socket.on('close', () => sockets.delete(socket));
-});
+    const server = http.createServer(app);
 
-server.listen(PORT);
-server.on('error', onError);
-server.on('listening', onListening);
+    // socket.io (graceful fallback if file missing)
+    try {
+        const initSocket = require('../socket');
+        initSocket(server);
+    } catch { /* socket.js is optional */ }
 
-// Graceful shutdown
-const graceful = async (signal) => {
-    console.log(`\nReceived ${signal}. Shutting down gracefully...`);
-    server.close(() => {
-        console.log('HTTP server closed.');
-        process.exit(0);
+    // Track open sockets for graceful shutdown
+    const sockets = new Set();
+    server.on('connection', s => { sockets.add(s); s.on('close', () => sockets.delete(s)); });
+
+    server.listen(PORT, () => {
+        const env = process.env.NODE_ENV || 'development';
+        console.log(`Server listening on port ${PORT} [${env.toUpperCase()}]`);
+
+        // Phase 7: SLA background job (check every 5 mins)
+        setInterval(async () => {
+            try {
+                const ComplaintService = require('../service/v1/ComplaintService');
+                const svc = new ComplaintService();
+                const count = await svc.checkAndEscalateSLA();
+                if (count > 0) console.log(`[SLA] ${count} complaints auto-escalated.`);
+            } catch (err) {
+                console.error('[SLA Error]', err.message);
+            }
+        }, 5 * 60000);
     });
-    // Force close after 8s
-    setTimeout(() => {
-        for (const s of sockets) { try { s.destroy(); } catch { } }
-        process.exit(0);
-    }, 8000).unref();
-};
 
-process.on('SIGTERM', () => graceful('SIGTERM'));
-process.on('SIGINT', () => graceful('SIGINT'));
+    server.on('error', (err) => {
+        if (err.syscall !== 'listen') throw err;
+        const bind = `Port ${PORT}`;
+        if (err.code === 'EACCES') { console.error(`${bind} requires elevated privileges`); process.exit(1); }
+        if (err.code === 'EADDRINUSE') { console.error(`${bind} is already in use`); process.exit(1); }
+        throw err;
+    });
+
+    // Graceful shutdown
+    const shutdown = (signal) => {
+        console.log(`\n[${signal}] Shutting down gracefully...`);
+        server.close(() => { console.log('HTTP server closed.'); process.exit(0); });
+        setTimeout(() => { for (const s of sockets) { try { s.destroy(); } catch { } } process.exit(0); }, 8000).unref();
+    };
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+})();
 
 function normalizePort(val) {
     const p = parseInt(val, 10);
     if (Number.isNaN(p)) return val;
-    if (p >= 0) return p;
-    return false;
-}
-
-function onError(error) {
-    if (error.syscall !== 'listen') throw error;
-    const bind = typeof PORT === 'string' ? `Pipe ${PORT}` : `Port ${PORT}`;
-    if (error.code === 'EACCES') {
-        console.error(`${bind} requires elevated privileges`);
-        process.exit(1);
-    } else if (error.code === 'EADDRINUSE') {
-        console.error(`${bind} is already in use`);
-        process.exit(1);
-    } else {
-        throw error;
-    }
-}
-
-function onListening() {
-    const addr = server.address();
-    const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
-    console.log(`Server listening on ${bind} [${process.env.NODE_ENV || 'development'}]`);
-    debug(`Listening on ${bind}`);
+    return p >= 0 ? p : false;
 }

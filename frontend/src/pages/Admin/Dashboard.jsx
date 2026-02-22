@@ -9,16 +9,22 @@ function NavBar() {
     const navigate = useNavigate();
     const logout = () => { localStorage.removeItem('token'); navigate('/login'); };
     return (
-        <nav className="sticky top-0 z-50 bg-white border-b border-amber-100 shadow-sm">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                    <span className="text-2xl">🏛️</span>
+        <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/50 shadow-lg">
+            <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <span className="text-3xl bg-green-900 p-2 rounded-2xl">🏛️</span>
                     <div>
-                        <div className="font-bold text-green-800 text-sm">Gram Panchayat</div>
-                        <div className="text-xs text-amber-600">Admin Control Panel</div>
+                        <div className="font-black text-green-900 text-base leading-tight">Gram Panchayat</div>
+                        <div className="text-[10px] text-amber-600 font-black uppercase tracking-widest">Admin Control Panel • System Monitor</div>
                     </div>
                 </div>
-                <button onClick={logout} className="text-xs bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-lg hover:bg-red-100 transition">Logout</button>
+                <div className="flex items-center gap-4">
+                    <div className="hidden md:flex flex-col items-end">
+                        <span className="text-sm font-black text-gray-800">Administrator Access</span>
+                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-tighter">System Root</span>
+                    </div>
+                    <button onClick={logout} className="bg-red-50 text-red-600 border border-red-100 px-4 py-2 rounded-xl text-xs font-black hover:bg-red-600 hover:text-white transition-all shadow-sm">LOGOUT</button>
+                </div>
             </div>
         </nav>
     );
@@ -91,79 +97,113 @@ export default function AdminDashboard() {
             <NavBar />
             <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
                 {/* Header */}
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-green-900">System Analytics</h1>
-                        <p className="text-sm text-gray-500">Poore system ka overview — real-time data</p>
+                        <h1 className="text-2xl font-bold text-green-900">System Performance Analytics</h1>
+                        <p className="text-sm text-gray-500">Real-time monitoring across all wards</p>
                     </div>
-                    <div className={`px-4 py-2 rounded-xl text-sm font-bold ${resolutionRate >= 70 ? 'bg-green-100 text-green-700' : resolutionRate >= 40 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                        {resolutionRate}% Resolution Rate
+                    <div className="flex gap-2">
+                        <div className="bg-white px-4 py-2 rounded-xl border border-amber-100 shadow-sm flex flex-col items-center">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold">Avg. Resolution</span>
+                            <span className="text-lg font-bold text-blue-600">{analytics?.avgResolutionHours || 0}h</span>
+                        </div>
+                        <div className={`px-4 py-2 rounded-xl border shadow-sm flex flex-col items-center min-w-[120px] ${resolutionRate >= 70 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                            <span className="text-[10px] text-gray-400 uppercase font-bold">Success Rate</span>
+                            <span className={`text-lg font-bold ${resolutionRate >= 70 ? 'text-green-700' : 'text-yellow-700'}`}>{resolutionRate}%</span>
+                        </div>
                     </div>
                 </div>
 
                 {/* Stat Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <StatCard emoji="📋" label="Total Shikayatein" value={total} bg="bg-white" textColor="text-green-900" subtitle="Sab status mila ke" />
-                    <StatCard emoji="⏳" label="Pending" value={pending} bg="bg-yellow-50" textColor="text-yellow-700" subtitle="Open + In Progress" />
-                    <StatCard emoji="✅" label="Resolved" value={resolved} bg="bg-green-50" textColor="text-green-700" subtitle="Khatam hui shikayatein" />
-                    <StatCard emoji="⚠️" label="Escalated" value={escalated} bg="bg-red-50" textColor="text-red-700" subtitle="SLA breach hua" />
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard emoji="📋" label="KUL SHIKAYATEIN" value={analytics?.total} bg="bg-white" textColor="text-green-900" subtitle="Total Logged" />
+                    <StatCard emoji="⏳" label="PENDING ACTION" value={(analytics?.total || 0) - (analytics?.resolved || 0)} bg="bg-white" textColor="text-amber-600" subtitle="Needs Attention" />
+                    <StatCard emoji="✅" label="RESOLVED" value={analytics?.resolved} bg="bg-white" textColor="text-green-700" subtitle="Completed" />
+                    <StatCard emoji="🚨" label="ESCALATED" value={analytics?.escalatedCount} bg="bg-red-50/50" textColor="text-red-700" subtitle="High Priority" />
                 </div>
 
-                {/* Main Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    {/* Status Breakdown */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-amber-100 shadow-sm">
-                        <h2 className="font-bold text-green-900 text-lg mb-5">Status Breakdown</h2>
-                        <div className="space-y-4">
-                            {analytics?.stats?.map(s => (
-                                <ProgressBar key={s.status} label={s.status} value={s.total} total={total} color={STATUS_BAR_COLORS[s.status] || 'bg-gray-400'} />
-                            ))}
+                {/* Ward-wise Density & Performance */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Ward Breakdown */}
+                    <div className="bg-white rounded-[2.5rem] p-8 border border-white shadow-2xl space-y-6">
+                        <div className="flex justify-between items-center border-b border-amber-50 pb-4">
+                            <h2 className="font-black text-green-900 text-lg uppercase tracking-tight">Ward-wise Density</h2>
+                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-1 rounded-lg">Performance Map</span>
                         </div>
-                        {total === 0 && <p className="text-gray-400 text-center py-8">Koi data nahi mila</p>}
+                        <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            {analytics?.wardStats?.map(w => {
+                                const rate = w.total > 0 ? (w.resolved / w.total) * 100 : 0;
+                                return (
+                                    <div key={w.wardNo} className="group">
+                                        <div className="flex justify-between items-end mb-2">
+                                            <div>
+                                                <span className="font-black text-gray-800 text-sm">Ward No. {w.wardNo}</span>
+                                                <div className="text-[10px] text-gray-400 font-bold uppercase">{w.resolved} resolved of {w.total}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                {w.escalated > 0 && <span className="text-red-600 font-black text-xs mr-2 animate-pulse">🚨 {w.escalated} Escalated</span>}
+                                                <span className={`text-xs font-black ${rate >= 70 ? 'text-green-600' : 'text-amber-600'}`}>{Math.round(rate)}%</span>
+                                            </div>
+                                        </div>
+                                        <div className="h-3 bg-gray-50 rounded-full overflow-hidden flex border border-gray-100 shadow-inner">
+                                            <div className={`h-full transition-all duration-1000 ${rate >= 70 ? 'bg-green-500' : rate >= 40 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${rate}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
 
-                    {/* System Health */}
-                    <div className="bg-green-800 rounded-2xl p-6 text-white shadow-sm">
-                        <h2 className="font-bold text-lg mb-5">🖥️ System Health</h2>
-                        <div className="space-y-3">
-                            {[
-                                { label: 'Auto-Escalation Engine', status: 'Active' },
-                                { label: 'SLA Breach Detection', status: 'Active' },
-                                { label: 'Database Sync', status: 'Healthy' },
-                                { label: 'Photo Upload Service', status: 'Active' },
-                                { label: 'Socket.IO Real-time', status: 'Active' },
-                            ].map(item => (
-                                <div key={item.label} className="flex justify-between items-center py-2 border-b border-green-700/50">
-                                    <span className="text-green-200 text-sm">{item.label}</span>
-                                    <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">{item.status}</span>
+                    {/* Officer Performance */}
+                    <div className="bg-white rounded-2xl p-6 border border-amber-100 shadow-sm space-y-5">
+                        <h2 className="font-bold text-green-900 text-lg">Officer Leaderboard</h2>
+                        <div className="space-y-4">
+                            {analytics?.officerPerformance?.map((op, i) => (
+                                <div key={op.officialId} className="flex items-center gap-4 p-3 rounded-xl bg-amber-50/30 border border-amber-100/50">
+                                    <div className="w-8 h-8 rounded-full bg-green-700 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                                        {i + 1}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-bold text-green-900 text-sm truncate">{op.official?.name}</div>
+                                        <div className="text-[10px] text-gray-400 uppercase">{op.official?.email}</div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className="text-sm font-bold text-green-700">{op.resolved}</div>
+                                        <div className="text-[10px] text-gray-400">SOLVED</div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                        <p className="text-green-300 text-xs mt-5 text-center italic">
-                            SLA timers har 24 ghante mein check hote hain
-                        </p>
                     </div>
                 </div>
 
-                {/* Bottom Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-2xl p-5 border border-amber-100 shadow-sm text-center">
-                        <div className="text-4xl mb-2">🏆</div>
-                        <div className="text-2xl font-bold text-green-800">{resolved}</div>
-                        <div className="text-sm text-gray-500">Resolved Complaints</div>
+                {/* Status Breakdown Bar */}
+                <div className="bg-white rounded-2xl p-6 border border-amber-100 shadow-sm text-center">
+                    <h2 className="font-bold text-green-900 text-lg mb-6">Status Overview</h2>
+                    <div className="flex h-12 rounded-2xl overflow-hidden shadow-inner bg-gray-50">
+                        {analytics?.stats?.map(s => {
+                            const pct = analytics.total > 0 ? (s.total / analytics.total) * 100 : 0;
+                            return (
+                                <div key={s.status}
+                                    style={{ width: `${pct}%` }}
+                                    className={`${STATUS_BAR_COLORS[s.status] || 'bg-gray-400'} flex items-center justify-center text-[10px] font-bold text-white transition-all hover:opacity-90 cursor-default`}
+                                    title={`${s.status}: ${s.total}`}>
+                                    {pct > 15 ? s.status : ''}
+                                </div>
+                            );
+                        })}
                     </div>
-                    <div className="bg-white rounded-2xl p-5 border border-amber-100 shadow-sm text-center">
-                        <div className="text-4xl mb-2">🔒</div>
-                        <div className="text-2xl font-bold text-gray-600">{closed}</div>
-                        <div className="text-sm text-gray-500">Closed Complaints</div>
-                    </div>
-                    <div className={`rounded-2xl p-5 border shadow-sm text-center ${escalated > 0 ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
-                        <div className="text-4xl mb-2">{escalated > 0 ? '🚨' : '🟢'}</div>
-                        <div className={`text-2xl font-bold ${escalated > 0 ? 'text-red-700' : 'text-green-700'}`}>{escalated}</div>
-                        <div className="text-sm text-gray-500">SLA Escalations</div>
+                    <div className="flex flex-wrap justify-center gap-4 mt-6">
+                        {Object.entries(STATUS_BAR_COLORS).map(([label, color]) => (
+                            <div key={label} className="flex items-center gap-1.5 grayscale-[0.5]">
+                                <div className={`w-3 h-3 rounded-full ${color}`} />
+                                <span className="text-xs text-gray-500 font-semibold uppercase">{label}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
         </div>
     );
+
 }

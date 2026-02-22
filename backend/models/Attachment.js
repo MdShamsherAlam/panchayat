@@ -32,7 +32,4 @@ const Attachment = sequelize.define('Attachment', {
     timestamps: true,
 });
 
-Complaint.hasMany(Attachment, { foreignKey: 'complaintId' });
-Attachment.belongsTo(Complaint, { foreignKey: 'complaintId' });
-
 module.exports = Attachment;

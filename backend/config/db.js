@@ -12,8 +12,7 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
     logging: (msg, duration) => {
-      // Integration with performance monitoring
-      if (duration > (process.env.SLOW_QUERY_THRESHOLD || 100)) {
+      if (duration > (process.env.SLOW_QUERY_THRESHOLD || 500)) {
         console.warn(`[SLOW QUERY] ${duration}ms - ${msg}`);
       }
     },
@@ -44,8 +43,51 @@ const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
+
+    // Load ALL models in FK dependency order before sync
+    const { Role, User } = require('../models/index');
+
+    // Auto-create / alter tables to match current model definitions
+    await sequelize.sync({ alter: true });
+    console.log('All database tables synced successfully.');
+
+    // ── Seed roles (idempotent) ────────────────────────────────────────────
+    const roles = [
+      { name: 'Administrator', slug: 'admin' },
+      { name: 'Panchayat Official', slug: 'official' },
+      { name: 'Citizen', slug: 'citizen' }
+    ];
+    for (const r of roles) {
+      await Role.findOrCreate({ where: { slug: r.slug }, defaults: r });
+    }
+    console.log('Roles ready.');
+
+    // ── Seed default admin (always sync password to .env) ─────────────────
+    const bcrypt = require('bcryptjs');
+    const adminRole = await Role.findOne({ where: { slug: 'admin' } });
+    const adminEmail = 'admin@panchayat.gov.in';
+    const adminPass = process.env.DEFAULT_ADMIN_PASSWORD || 'admin1010#';
+    const hashedPass = await bcrypt.hash(adminPass, 10);
+
+    const [adminUser, created] = await User.findOrCreate({
+      where: { email: adminEmail },
+      defaults: {
+        name: process.env.DEFAULT_ADMIN_NAME || 'System Admin',
+        email: adminEmail,
+        password: hashedPass,
+        roleId: adminRole.id
+      }
+    });
+    // Always update password so it matches current .env (handles re-seed)
+    if (!created) {
+      await adminUser.update({ password: hashedPass, roleId: adminRole.id });
+    }
+    console.log(created ? `Default admin created: ${adminEmail}` : `Default admin password synced: ${adminEmail}`);
+
+
   } catch (error) {
-    console.error('Unable to connect to the database:', error);
+    console.error('Unable to connect or sync the database:', error.message);
+    process.exit(1);
   }
 };
 

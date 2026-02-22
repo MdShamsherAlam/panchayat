@@ -44,7 +44,4 @@ const History = sequelize.define('History', {
     timestamps: true,
 });
 
-Complaint.hasMany(History, { foreignKey: 'complaintId' });
-History.belongsTo(Complaint, { foreignKey: 'complaintId' });
-
 module.exports = History;
